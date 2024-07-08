@@ -14,14 +14,23 @@ def index():
 @app.post('/')
 def handle_search():
     query = request.form.get('query', '')
+    filters, parsed_query = extract_filters(query)
     from_ = request.form.get('from_', type=int, default=0)
+
     results = es.search(
         query={
-            'multi_match': {
-                'query': query,
-                'fields': ['name', 'summary', 'content'],
+            'bool': {
+                'must': {
+                    'multi_match': {
+                        'query': parsed_query,
+                        'fields': ['name', 'summary', 'content'],
+                    }
+                },
+                **filters
             }
-        }, size=5, from_=from_
+        },
+        size=5,
+        from_=from_
     )
     return render_template('index.html', results=results['hits']['hits'],
                            query=query, from_=from_,
