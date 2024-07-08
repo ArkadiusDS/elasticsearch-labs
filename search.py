@@ -37,3 +37,26 @@ class Search:
         """
         self.es.indices.delete(index='my_documents', ignore_unavailable=True)
         self.es.indices.create(index='my_documents')
+
+    def insert_documents(self, documents):
+        """
+        Inserts a list of documents into the 'my_documents' index in bulk.
+
+        Parameters
+        ----------
+        documents : list
+            A list of documents (dictionaries) to be indexed.
+
+        Returns
+        -------
+        dict
+            The response from the bulk insertion operation.
+        """
+        operations = []
+        for document in documents:
+            operations.append({'index': {'_index': 'my_documents'}})
+            operations.append(document)
+        return self.es.bulk(operations=operations)
+
+    def search(self, **query_args):
+        return self.es.search(index='my_documents', **query_args)
