@@ -88,3 +88,19 @@ class Search:
             The response from the search operation, containing search hits and metadata.
         """
         return self.es.search(index='my_documents', **query_args)
+
+    def retrieve_document(self, id):
+        """
+        Retrieves a document from the 'my_documents' index by its ID.
+
+        Parameters
+        ----------
+        id : str
+            The ID of the document to retrieve.
+
+        Returns
+        -------
+        dict
+            The response from the get operation, containing the document data.
+        """
+        return self.es.get(index='my_documents', id=id)
