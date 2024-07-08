@@ -30,3 +30,10 @@ class Search:
         client_info = self.es.info()
         print('Connected to Elasticsearch!')
         pprint(client_info.body)
+
+    def create_index(self):
+        """
+        Deletes the 'my_documents' index if it exists and creates a new one.
+        """
+        self.es.indices.delete(index='my_documents', ignore_unavailable=True)
+        self.es.indices.create(index='my_documents')
