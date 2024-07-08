@@ -16,10 +16,9 @@ def handle_search():
     query = request.form.get('query', '')
     results = es.search(
         query={
-            'match': {
-                'name': {
-                    'query': query
-                }
+            'multi_match': {
+                'query': query,
+                'fields': ['name', 'summary', 'content'],
             }
         }
     )
@@ -28,9 +27,14 @@ def handle_search():
                            total=results['hits']['total']['value'])
 
 
+
 @app.get('/document/<id>')
 def get_document(id):
-    return 'Document not found'
+    document = es.retrieve_document(id)
+    title = document['_source']['name']
+    paragraphs = document['_source']['content'].split('\n')
+    return render_template('document.html', title=title, paragraphs=paragraphs)
+
 
 @app.cli.command()
 def reindex():
