@@ -58,5 +58,18 @@ class Search:
             operations.append(document)
         return self.es.bulk(operations=operations)
 
-    def search(self, **query_args):
-        return self.es.search(index='my_documents', **query_args)
+
+    def reindex(self):
+        """
+        Recreates the 'my_documents' index and inserts documents from 'data.json'.
+
+        Returns
+        -------
+        dict
+            The response from the bulk insertion operation.
+        """
+        self.create_index()
+        with open('data.json', 'rt') as f:
+            documents = json.loads(f.read())
+        return self.insert_documents(documents)
+
