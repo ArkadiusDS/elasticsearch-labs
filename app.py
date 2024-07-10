@@ -40,6 +40,16 @@ def handle_search():
                 **filters
             }
         },
+        knn={
+            'field': 'embedding',
+            'query_vector': es.get_embedding(parsed_query),
+            'k': 10,
+            'num_candidates': 50,
+            **filters,
+        },
+        rank={
+            'rrf': {}
+        },
         aggs={
             'category-agg': {
                 'terms': {
@@ -55,7 +65,7 @@ def handle_search():
             },
         },
         size=5,
-        from_=from_
+        from_=from_,
     )
     aggs = {
         'Category': {
@@ -71,7 +81,6 @@ def handle_search():
     return render_template('index.html', results=results['hits']['hits'],
                            query=query, from_=from_,
                            total=results['hits']['total']['value'], aggs=aggs)
-
 
 
 @app.get('/document/<id>')

@@ -4,6 +4,7 @@ import json
 from pprint import pprint
 from dotenv import load_dotenv
 from elasticsearch import Elasticsearch
+from sentence_transformers import SentenceTransformer
 
 load_dotenv()
 
@@ -24,6 +25,7 @@ class Search:
         environment variables for the cloud ID and API key. Prints connection
         information on successful connection.
         """
+        self.model = SentenceTransformer('intfloat/multilingual-e5-small')
         self.es = Elasticsearch(cloud_id=os.environ['ELASTIC_CLOUD_ID'],
                                 api_key=os.environ['ELASTIC_API_KEY'])
         client_info = self.es.info()
@@ -31,30 +33,32 @@ class Search:
         pprint(client_info.body)
 
     def create_index(self):
-        """
-        Deletes the 'my_documents' index if it exists and creates a new one.
-        """
         self.es.indices.delete(index='my_documents', ignore_unavailable=True)
-        self.es.indices.create(index='my_documents')
+        self.es.indices.create(index='my_documents', mappings={
+            'properties': {
+                'embedding': {
+                    'type': 'dense_vector',
+                }
+            }
+        })
+
+    def get_embedding(self, text):
+        return self.model.encode(text)
+
+    def insert_document(self, document):
+        return self.es.index(index='my_documents', document={
+            **document,
+            'embedding': self.get_embedding(document['summary']),
+        })
 
     def insert_documents(self, documents):
-        """
-        Inserts a list of documents into the 'my_documents' index in bulk.
-
-        Parameters
-        ----------
-        documents : list
-            A list of documents (dictionaries) to be indexed.
-
-        Returns
-        -------
-        dict
-            The response from the bulk insertion operation.
-        """
         operations = []
         for document in documents:
             operations.append({'index': {'_index': 'my_documents'}})
-            operations.append(document)
+            operations.append({
+                **document,
+                'embedding': self.get_embedding(document['summary']),
+            })
         return self.es.bulk(operations=operations)
 
     def reindex(self):
