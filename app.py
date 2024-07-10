@@ -10,6 +10,7 @@ es = Search()
 def index():
     return render_template('index.html')
 
+
 @app.post('/')
 def handle_search():
     query = request.form.get('query', '')
@@ -20,15 +21,41 @@ def handle_search():
         knn={
             'field': 'embedding',
             'query_vector': es.get_embedding(parsed_query),
-            'num_candidates': 50,
             'k': 10,
+            'num_candidates': 50,
+            **filters,
+        },
+        aggs={
+            'category-agg': {
+                'terms': {
+                    'field': 'category.keyword',
+                }
+            },
+            'year-agg': {
+                'date_histogram': {
+                    'field': 'updated_at',
+                    'calendar_interval': 'year',
+                    'format': 'yyyy',
+                },
+            },
         },
         size=5,
         from_=from_
     )
+    aggs = {
+        'Category': {
+            bucket['key']: bucket['doc_count']
+            for bucket in results['aggregations']['category-agg']['buckets']
+        },
+        'Year': {
+            bucket['key_as_string']: bucket['doc_count']
+            for bucket in results['aggregations']['year-agg']['buckets']
+            if bucket['doc_count'] > 0
+        },
+    }
     return render_template('index.html', results=results['hits']['hits'],
                            query=query, from_=from_,
-                           total=results['hits']['total']['value'])
+                           total=results['hits']['total']['value'], aggs=aggs)
 
 
 
